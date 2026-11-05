@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KNN Pixel Arcade</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 20px;
+    display: grid; place-items: center;
+    background: #090910; color: #fff;
+    font-family: "Courier New", monospace;
+  }
+  .cabinet {
+    width: min(100%, 540px); padding: 22px;
+    background: #151522; border: 4px solid #d9aa39;
+    box-shadow: 0 0 0 5px #403016, 0 0 35px #d9aa3940;
+    text-align: center;
+  }
+  .brand { color: #f4c75e; letter-spacing: 5px; font-weight: bold; }
+  h1 { color: #fff0b0; font-size: clamp(25px, 7vw, 38px); margin: 12px 0 5px; }
+  .subtitle { color: #aaa; font-size: 12px; }
+  .hud {
+    display: flex; justify-content: space-between; gap: 8px;
+    margin: 22px 0; color: #f4c75e; font-size: 13px;
+  }
+  .screen {
+    background: #080d19; border: 3px solid #4e5873;
+    padding: 24px 14px; min-height: 245px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .pixel { font-size: 44px; margin-bottom: 12px; }
+  .prompt { color: #8de7ff; font-size: 13px; }
+  .word { font-size: clamp(25px, 7vw, 34px); color: #fff; margin: 14px 0; }
+  .options { display: grid; gap: 10px; margin-top: 18px; }
+  button {
+    font: bold 15px "Courier New", monospace; cursor: pointer;
+    padding: 14px 10px; border: 2px solid #d9aa39;
+    color: #fff; background: #25253a;
+  }
+  button:hover { background: #473719; }
+  button:disabled { opacity: .5; cursor: default; }
+  .main-btn { background: #d9aa39; color: #17120a; margin-top: 18px; }
+  .feedback { min-height: 22px; margin-top: 12px; font-size: 13px; }
+  .small { color: #999; font-size: 11px; line-height: 1.6; margin-top: 18px; }
+  .hidden { display: none !important; }
+  .whatsapp {
+    display: block; margin-top: 18px; padding: 15px;
+    background: #20c86b; color: #07180e; font-weight: bold;
+    text-decoration: none; border: 3px solid #a4ffbf;
+  }
+  .whatsapp:hover { background: #62ed98; }
+</style>
+</head>
+<body>
+<main class="cabinet">
+  <div class="brand">KNN IDIOMAS • BLACK EDITION</div>
+  <h1>PIXEL ARCADE</h1>
+  <div class="subtitle">PRESS START TO PLAY • ENGLISH CHALLENGE</div>
+
+  <div class="hud">
+    <span id="score">SCORE: 000</span>
+    <span id="lives">LIVES: ♥ ♥ ♥</span>
+    <span id="level">ROUND: 1/8</span>
+  </div>
+
+  <section class="screen" id="game">
+    <div class="pixel">👾</div>
+    <div class="prompt">YOUR MISSION:</div>
+    <div class="word" id="question">READY PLAYER ONE?</div>
+    <div class="prompt" id="instruction">Escolha a tradução correta!</div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+  </section>
+
+  <section id="start">
+    <p>Prepare seus reflexos e prove que seu inglês está afiado!</p>
+    <p class="small">8 desafios • 3 vidas • Quanto mais acertos, maior sua pontuação.</p>
+    <button class="main-btn" onclick="startGame()">▶ START GAME</button>
+  </section>
+
+  <section id="finish" class="hidden">
+    <div class="pixel" id="resultIcon">🏆</div>
+    <h2 id="resultTitle">GAME OVER!</h2>
+    <p id="resultText"></p>
+    <p class="small">O próximo desafio pode começar na comunidade da KNN.</p>
+    <a class="whatsapp" href="https://chat.whatsapp.com/GuKPx1CFCss1q83uje9i2u" target="_blank" rel="noopener">
+      ➜ ENTRAR NA COMUNIDADE KNN
+    </a>
+    <button class="main-btn" onclick="startGame()">↻ PLAY AGAIN</button>
+  </section>
+
+  <div class="small">KNN IDIOMAS • LEVEL UP YOUR ENGLISH</div>
+</main>
+
+<script>
+const questions = [
+  { pt: "GATO", answers: ["CAT", "DOG", "BIRD"], correct: "CAT" },
+  { pt: "OBRIGADO", answers: ["PLEASE", "THANK YOU", "SORRY"], correct: "THANK YOU" },
+  { pt: "MAÇÃ", answers: ["ORANGE", "GRAPE", "APPLE"], correct: "APPLE" },
+  { pt: "ESCOLA", answers: ["SCHOOL", "HOUSE", "STORE"], correct: "SCHOOL" },
+  { pt: "FELIZ", answers: ["ANGRY", "HAPPY", "TIRED"], correct: "HAPPY" },
+  { pt: "ÁGUA", answers: ["JUICE", "MILK", "WATER"], correct: "WATER" },
+  { pt: "BORBOLETA", answers: ["BUTTERFLY", "BEE", "FISH"], correct: "BUTTERFLY" },
+  { pt: "BOM DIA", answers: ["GOOD NIGHT", "GOOD MORNING", "GOODBYE"], correct: "GOOD MORNING" }
+];
+
+let current = 0, score = 0, lives = 3, locked = false;
+
+function startGame() {
+  current = 0; score = 0; lives = 3; locked = false;
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("finish").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+  updateHud();
+  showQuestion();
+}
+
+function updateHud() {
+  document.getElementById("score").textContent = "SCORE: " + String(score).padStart(3, "0");
+  document.getElementById("lives").textContent = "LIVES: " + "♥ ".repeat(lives);
+  document.getElementById("level").textContent = "ROUND: " + Math.min(current + 1, 8) + "/8";
+}
+
+function showQuestion() {
+  locked = false;
+  const q = questions[current];
+  document.getElementById("question").textContent = q.pt;
+  document.getElementById("instruction").textContent = "CHOOSE THE CORRECT TRANSLATION!";
+  document.getElementById("feedback").textContent = "";
+  const options = document.getElementById("options");
+  options.innerHTML = "";
+
+  q.answers.forEach((answer, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = (index + 1) + "  |  " + answer;
+    btn.onclick = () => choose(answer);
+    options.appendChild(btn);
+  });
+  updateHud();
+}
+
+function choose(answer) {
+  if (locked) return;
+  locked = true;
+  const q = questions[current];
+  const buttons = document.querySelectorAll("#options button");
+  buttons.forEach(btn => btn.disabled = true);
+
+  if (answer === q.correct) {
+    score += 100;
+    document.getElementById("feedback").textContent = "✓ CORRECT! +100 POINTS";
+    document.getElementById("feedback").style.color = "#72f5a2";
+  } else {
+    lives--;
+    document.getElementById("feedback").textContent = "✗ WRONG! THE ANSWER WAS " + q.correct;
+    document.getElementById("feedback").style.color = "#ff7777";
+  }
+
+  updateHud();
+  setTimeout(() => {
+    current++;
+    if (lives <= 0 || current >= questions.length) finishGame();
+    else showQuestion();
+  }, 850);
+}
+
+function finishGame() {
+  document.getElementById("game").classList.add("hidden");
+  document.getElementById("finish").classList.remove("hidden");
+  const won = lives > 0;
+  document.getElementById("resultIcon").textContent = won ? "🏆" : "👾";
+  document.getElementById("resultTitle").textContent = won ? "LEVEL COMPLETE!" : "GAME OVER!";
+  document.getElementById("resultText").textContent =
+    "Sua pontuação: " + score + " pontos. " +
+    (won ? "Mandou muito bem, player!" : "Não desista! Tente bater seu recorde.");
+}
+</script>
+</body>
+</html>
